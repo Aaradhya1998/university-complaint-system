@@ -26,14 +26,15 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '0496f049d0dfcb00f336d4e264964254e714d56374d7369586415738bc496cfb')
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 465))
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = (
     os.environ.get('MAIL_DEFAULT_SENDER') or app.config['MAIL_USERNAME']
 )
+
 if not app.config['MAIL_DEFAULT_SENDER']:
     raise RuntimeError("MAIL_USERNAME or MAIL_DEFAULT_SENDER must be configured in .env")
 
@@ -46,21 +47,45 @@ def home():
 
 @app.route('/login', methods=['POST'])
 def login():
-    email = request.form['email']
-    otp = ''.join(random.choices(string.digits, k=6))
-    session['otp'] = otp
-    session['email'] = email
-    msg = Message(
-        'Your OTP Code',
-        sender=app.config['MAIL_DEFAULT_SENDER'],
-        recipients=[email],
-    )
-    
-    msg.body = f'Your OTP code is {otp}'
-    print("Sending OTP to:", email)
-    print("Using:", app.config['MAIL_USERNAME'])
-    mail.send(msg)
-    return render_template('otp_verify.html')
+    try:
+        print("STEP 1: /login route entered")
+
+        email = request.form.get('email')
+        print("STEP 2: email received =", email)
+
+        if not email:
+            print("STEP 3: email missing")
+            return "Email is required", 400
+
+        otp = ''.join(random.choices(string.digits, k=6))
+        session['otp'] = otp
+        session['email'] = email
+        print("STEP 4: OTP generated =", otp)
+
+        msg = Message(
+            'Your OTP Code',
+            sender=app.config['MAIL_DEFAULT_SENDER'],
+            recipients=[email],
+        )
+        msg.body = f'Your OTP code is {otp}'
+
+        print("STEP 5: about to send mail")
+        print("MAIL_USERNAME =", app.config['MAIL_USERNAME'])
+        print("MAIL_DEFAULT_SENDER =", app.config['MAIL_DEFAULT_SENDER'])
+
+        mail.send(msg)
+
+        print("STEP 6: mail sent successfully")
+        return render_template('otp_verify.html')
+
+    except Exception as e:
+        print("LOGIN ERROR:", e)
+        return f"Login/OTP failed: {e}", 500
+@app.route("/send_otp", methods=["GET", "POST"])
+def send_otp():
+    if request.method == "POST":
+        return login()
+    return redirect(url_for("home"))
 
 @app.route('/verify_otp', methods=['POST'])
 def verify_otp():
