@@ -81,11 +81,7 @@ def login():
     except Exception as e:
         print("LOGIN ERROR:", e)
         return f"Login/OTP failed: {e}", 500
-@app.route("/send_otp", methods=["GET", "POST"])
-def send_otp():
-    if request.method == "POST":
-        return login()
-    return redirect(url_for("home"))
+
 
 @app.route('/verify_otp', methods=['POST'])
 def verify_otp():
