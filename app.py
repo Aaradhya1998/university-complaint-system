@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_mail import Mail, Message
 from werkzeug.utils import secure_filename
 import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 import random
 import string
 import matplotlib
@@ -44,6 +46,24 @@ init_database(app)
 @app.route('/')
 def home():
     return render_template('login.html')
+def send_otp(email, otp):
+    try:
+        message = Mail(
+            from_email='your_verified_email@gmail.com',
+            to_emails=email,
+            subject='Your OTP Code',
+            html_content=f'<strong>Your OTP is {otp}</strong>'
+        )
+
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sg.send(message)
+
+        print("Status:", response.status_code)
+        return True
+
+    except Exception as e:
+        print("ERROR:", e)
+        return False
 
 @app.route('/login', methods=['POST'])
 def login():
