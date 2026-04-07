@@ -5,7 +5,8 @@ from werkzeug.utils import secure_filename
 import os
 import random
 import string
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 import sys
 print(sys.executable)
 from database import (
@@ -180,6 +181,8 @@ def mark_resolved(complaint_id):
 
 
 def generate_graphs():
+    import matplotlib.pyplot as plt
+    
     graph_dir = os.path.join(app.static_folder, 'graphs')
     os.makedirs(graph_dir, exist_ok=True)
 
